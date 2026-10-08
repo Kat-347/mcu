@@ -304,7 +304,7 @@ function updateEmptyStates() {
         watchedGrid: { symbol: '∅', text: 'Your archive awaits. Begin by marking an entry as viewed.' },
         remainingGrid: { symbol: '✦', text: 'The chronicle is complete. Every entry has been viewed or skipped.' },
         skippedGrid: { symbol: '⊘', text: 'No entries have been skipped. Every title is awaiting your discovery.' },
-        catalogGrid: { symbol: '—', text: 'No entries match your current query.' }
+        catalogGrid: { symbol: '-', text: 'No entries match your current query.' }
     };
 
     Object.entries(grids).forEach(([gridId, { symbol, text }]) => {
@@ -860,7 +860,7 @@ function updateToggle() {
     const label = document.getElementById('toggleLabel');
     if (currentModalItem && watchedItems[getUniqueId(currentModalItem)]) {
         track.classList.add('on');
-        if (label) label.textContent = 'Viewed — click to unmark';
+        if (label) label.textContent = 'Viewed - click to unmark';
     } else {
         track.classList.remove('on');
         if (label) label.textContent = 'I have viewed this entry';
