@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel to JavaScript Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            padding: 40px; 
+            max-width: 1000px; 
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        .info { 
+            background: white;
+            padding: 25px; 
+            border-radius: 8px; 
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .info h3 { margin-top: 0; color: #c8102e; }
+        .info ol { margin-left: 20px; line-height: 1.8; }
+        .info code { 
+            background: #f0f0f0; 
+            padding: 2px 6px; 
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        input[type="file"] {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        button { 
+            padding: 12px 24px; 
+            background: #c8102e; 
+            color: white; 
+            border: none; 
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        button:hover { background: #a00d24; }
+        textarea { 
+            width: 100%; 
+            height: 500px; 
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 12px; 
+            border-radius: 4px; 
+            margin-top: 15px;
+            display: none;
+        }
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 12px; 
+            border-radius: 4px; 
+            margin-top: 15px;
+            display: none;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 Excel to JavaScript Converter</h1>
+    
+    <div class="info">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Make sure your Excel has these columns (case-insensitive, spaces don't matter):
+                <ul>
+                    <li><code>Position</code> - Timeline position (number)</li>
+                    <li><code>Title</code> - Movie/show title</li>
+                    <li><code>Year</code> - Release year</li>
+                    <li><code>Runtime</code> - Duration</li>
+                    <li><code>Description</code> - Synopsis</li>
+                    <li><code>Timeline</code> - In-universe timeline</li>
+                    <li><code>Universe</code> - Universe name</li>
+                    <li><code>Phase</code> - MCU phase (e.g., "Phase 1", "other")</li>
+                    <li><code>Studio</code> - Production studio</li>
+                    <li><code>Image</code> - Image filename</li>
+                </ul>
+            </li>
+            <li>Upload your Excel file below</li>
+            <li>Copy the generated JavaScript</li>
+            <li>Paste it into <code>js/data.js</code></li>
+        </ol>
+    </div>
+
+    <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" />
+    <button onclick="convert()">Convert to JavaScript</button>
+    
+    <div id="success" class="success">✅ Successfully converted! Copy the code below.</div>
+    <div id="error" class="error"></div>
+    
+    <textarea id="output" placeholder="JavaScript output will appear here..."></textarea>
+
+    <script>
+        function convert() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const successDiv = document.getElementById('success');
+            const errorDiv = document.getElementById('error');
+            
+            successDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            
+            if (!file) {
+                errorDiv.textContent = '❌ Please select a file first!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    
+                    // CRITICAL FIX: defval: "" ensures empty columns (like Phase) are still registered
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+
+                    if (jsonData.length === 0) {
+                        throw new Error('No data found in the Excel file. Make sure the first row contains headers.');
+                    }
+
+                    const firstRow = jsonData[0];
+                    
+                    // Create a map of cleaned header names (lowercase, trimmed) to original names
+                    const headerMap = {};
+                    Object.keys(firstRow).forEach(key => {
+                        const cleanKey = key.toString().toLowerCase().trim();
+                        headerMap[cleanKey] = key;
+                    });
+
+                    const requiredColumns = ['position', 'title', 'year', 'runtime', 'description', 'timeline', 'universe', 'phase', 'studio', 'image'];
+                    const missingColumns = requiredColumns.filter(col => !headerMap.hasOwnProperty(col));
+                    
+                    if (missingColumns.length > 0) {
+                        const foundCols = Object.keys(firstRow).map(k => `"${k}"`).join(', ');
+                        throw new Error(`Missing columns: ${missingColumns.map(c => `"${c}"`).join(', ')}.\n\nYour file currently has these headers: ${foundCols}\n\n👉 Fix: Check your Excel file for typos, hidden spaces, or a missing "Phase" column.`);
+                    }
+
+                    // Normalize the data to use clean, consistent keys and remove decimals
+                    const normalizedData = jsonData.map(row => {
+                        const normalized = {};
+                        requiredColumns.forEach(reqCol => {
+                            const originalKey = headerMap[reqCol];
+                            let value = row[originalKey];
+                            
+                            // Clean up string values
+                            if (typeof value === 'string') {
+                                value = value.trim();
+                            }
+                            
+                            // 1. Ensure Position is a clean integer (no decimals)
+                            if (reqCol === 'position') {
+                                value = parseInt(value, 10) || 0;
+                            }
+                            
+                            // 2. Ensure Year is a clean integer string (no decimals) AND fixes Excel date serials
+                            if (reqCol === 'year') {
+                                if (typeof value === 'number') {
+                                    // Excel date serials for years 1980-2060 fall between 30000 and 60000
+                                    if (value > 30000 && value < 60000) {
+                                        const utcDays = Math.floor(value - 25569);
+                                        const date = new Date(utcDays * 86400 * 1000);
+                                        value = date.getFullYear().toString();
+                                    } else {
+                                        // Regular number: strip any decimals (e.g., 2018.0 -> 2018)
+                                        value = Math.floor(value).toString();
+                                    }
+                                } else {
+                                    // If it's already a string, remove any accidental trailing decimals (e.g., "2018.0")
+                                    value = value.toString().replace(/\.0+$/, '');
+                                }
+                            }
+                            
+                            // 3. Default Phase to "other" if it's completely blank
+                            if (reqCol === 'phase' && !value) {
+                                value = "other";
+                            }
+
+                            normalized[reqCol] = value;
+                        });
+                        return normalized;
+                    });
+
+                    const output = `const marvelData = ${JSON.stringify(normalizedData, null, 4)};`;
+                    document.getElementById('output').value = output;
+                    
+                    successDiv.textContent = `✅ Successfully converted ${normalizedData.length} entries!`;
+                    successDiv.style.display = 'block';
+                } catch (err) {
+                    errorDiv.textContent = `❌ Error: ${err.message}`;
+                    errorDiv.style.display = 'block';
+                }
+            };
+            reader.onerror = function() {
+                errorDiv.textContent = '❌ Error reading file';
+                errorDiv.style.display = 'block';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>

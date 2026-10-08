@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A chronological record of the Marvel Multiverse - track your viewing journey through every film and series.">
+    <meta name="theme-color" content="#f5f1e8">
+    <title>The Marvel Chronicle</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎬%3C/text%3E%3C/svg%3E">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Masthead -->
+        <header class="masthead">
+            <div class="masthead-center">
+                <h1 class="masthead-title">The Marvel <em>Chronicle</em></h1>
+                <div class="masthead-subtitle">A Chronological Record of the Multiverse</div>
+            </div>
+            <div class="masthead-right">Issue No. MMXXVI</div>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle Night Edition">
+                <span class="theme-icon moon">☾</span>
+                <span class="theme-icon sun" style="display:none;">☀</span>
+            </button>
+        </header>
+
+        <!-- Stats strip (Updated to 2 rows: Counts + Hours/Completion) -->
+        <div class="stats-strip">
+            <!-- Row 1: Entry Counts (Clickable) -->
+            <div class="stat" data-view="catalog" onclick="switchView('catalog')">
+                <div class="stat-label">Total Entries</div>
+                <div class="stat-value red" id="totalCount">0</div>
+            </div>
+            <div class="stat" data-view="watched" onclick="switchView('watched')">
+                <div class="stat-label">Viewed</div>
+                <div class="stat-value green" id="watchedCount">0</div>
+            </div>
+            <div class="stat" data-view="remaining" onclick="switchView('remaining')">
+                <div class="stat-label">Remaining</div>
+                <div class="stat-value amber" id="remainingCount">0</div>
+            </div>
+            <div class="stat" data-view="skipped" onclick="switchView('skipped')">
+                <div class="stat-label">Skipped</div>
+                <div class="stat-value muted" id="skippedCount">0</div>
+            </div>
+            
+            <!-- Row 2: Hours & Completion (Non-clickable statistics) -->
+            <div class="stat no-click">
+                <div class="stat-label">Total Hours</div>
+                <div class="stat-value red" id="totalHours">0 h</div>
+            </div>
+            <div class="stat no-click">
+                <div class="stat-label">Hours Watched</div>
+                <div class="stat-value green" id="watchedHours">0 h</div>
+            </div>
+            <div class="stat no-click">
+                <div class="stat-label">Hours Left</div>
+                <div class="stat-value amber" id="remainingHours">0 h</div>
+            </div>
+            <div class="stat no-click">
+                <div class="stat-label">Completion</div>
+                <div class="stat-value" id="progressPercent">0%</div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div id="timelineView" class="timeline-view">
+            <div class="zoom-controls">
+                <button id="zoomOut" class="zoom-btn" aria-label="Zoom out">−</button>
+                <button id="zoomIn" class="zoom-btn" aria-label="Zoom in">+</button>
+            </div>
+            <div class="timeline-wrapper">
+                <div class="timeline-scroll" id="timelineScroll">
+                    <div class="timeline" id="timeline">
+                        <div class="timeline-line"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="search-row">
+                <input type="text" class="search-box" id="searchBox" placeholder="Search the archive…">
+            </div>
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label class="filter-label">Phase</label>
+                    <select class="filter-select" id="phaseFilter">
+                        <option value="">All Phases</option>
+                        <option value="Phase 1">Phase I</option>
+                        <option value="Phase 2">Phase II</option>
+                        <option value="Phase 3">Phase III</option>
+                        <option value="Phase 4">Phase IV</option>
+                        <option value="Phase 5">Phase V</option>
+                        <option value="Phase 6">Phase VI</option>
+                        <option value="other">Non-MCU</option>
+                    </select>
+
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Universe</label>
+                    <select class="filter-select" id="universeFilter">
+                        <option value="">All Earths</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Studio</label>
+                    <select class="filter-select" id="studioFilter">
+                        <option value="">All Studios</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Era</label>
+                    <select class="filter-select" id="eraFilter">
+                        <option value="">All Eras</option>
+                        <option value="ancient">Before 1900</option>
+                        <option value="early">1900-1950</option>
+                        <option value="mid">1950-1990</option>
+                        <option value="modern">1990-2020</option>
+                        <option value="future">2020+</option>
+                    </select>
+                </div>
+                <button class="clear-btn" onclick="clearFilters()">Clear All</button>
+            </div>
+        </div>
+
+        <!-- View Switcher -->
+        <div class="view-switcher">
+            <button class="view-tab active" data-view="catalog" onclick="switchView('catalog')">
+                The Catalog <span class="tab-count" id="catalogCount">0</span>
+            </button>
+            <button class="view-tab" data-view="watched" onclick="switchView('watched')">
+                Viewed <span class="tab-count" id="watchedTabCount">0</span>
+            </button>
+            <button class="view-tab" data-view="remaining" onclick="switchView('remaining')">
+                Yet to View <span class="tab-count" id="remainingTabCount">0</span>
+            </button>
+            <button class="view-tab" data-view="skipped" onclick="switchView('skipped')">
+                Skipped <span class="tab-count" id="skippedTabCount">0</span>
+            </button>
+        </div>
+
+        <!-- Catalog View -->
+        <div id="catalogView" class="catalog-view active">
+            <div class="view-header">
+                <div class="view-header-text">
+                    <div class="view-eyebrow">The Complete Archive</div>
+                    <h2 class="view-title">Every Story, In Order</h2>
+                    <p class="view-subtitle">The complete multiverse, mapped out exactly as it unfolds.</p>
+                </div>
+                <div class="view-count" id="catalogShowing">0 entries</div>
+                <button id="sortToggleBtn" class="sort-toggle" onclick="toggleSortMode()">
+                    <span class="sort-toggle-icon">⇅</span>
+                    <span class="sort-toggle-label">Chronological</span>
+                </button>
+                <button id="gridSizeToggleBtn" class="sort-toggle" title="Toggle grid size">
+                    <span class="sort-toggle-icon">⊞</span>
+                    <span class="sort-toggle-label">Compact</span>
+                </button>
+            </div>
+            <div class="card-grid" id="catalogGrid"></div>
+        </div>
+
+        <!-- Watched View -->
+        <div id="watchedView" class="watched-view">
+            <div class="view-header">
+                <div class="view-header-text">
+                    <div class="view-eyebrow">Your Personal Archive</div>
+                    <h2 class="view-title">You Have Viewed</h2>
+                    <p class="view-subtitle">A record of the multiverse journey you've already experienced.</p>
+                </div>
+                <div class="view-count" id="watchedShowing">0 entries</div>
+            </div>
+            <div class="card-grid" id="watchedGrid"></div>
+        </div>
+
+        <!-- Remaining View -->
+        <div id="remainingView" class="remaining-view">
+            <div class="view-header">
+                <div class="view-header-text">
+                    <div class="view-eyebrow">The Uncharted</div>
+                    <h2 class="view-title">Yet to Be Viewed</h2>
+                    <p class="view-subtitle">The chapters of the multiverse still awaiting your discovery. Where shall your journey continue?</p>
+                </div>
+                <div class="view-count" id="remainingShowing">0 entries</div>
+            </div>
+            <div class="card-grid" id="remainingGrid"></div>
+        </div>
+
+        <!-- Skipped View -->
+        <div id="skippedView" class="skipped-view">
+            <div class="view-header">
+                <div class="view-header-text">
+                    <div class="view-eyebrow">The Bypassed</div>
+                    <h2 class="view-title">Entries You Have Skipped</h2>
+                    <p class="view-subtitle">Titles you have chosen to bypass for now. Is it time to watch them now?</p>
+                </div>
+                <div class="view-count" id="skippedShowing">0 entries</div>
+            </div>
+            <div class="card-grid" id="skippedGrid"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button id="modalPrev" class="modal-nav modal-prev" aria-label="Previous entry">←</button>
+            <button id="modalNext" class="modal-nav modal-next" aria-label="Next entry">→</button>
+            <div class="modal-image">
+                <img id="modalImage" src="" alt="Entry Image">
+            </div>
+            <div class="modal-body">
+                <div class="modal-eyebrow" id="modalEyebrow">Entry</div>
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta">
+                    <div class="modal-meta-item">
+                        <span class="modal-meta-label">Released</span>
+                        <span class="modal-meta-value" id="modalYear"></span>
+                    </div>
+                    <div class="modal-meta-item">
+                        <span class="modal-meta-label">Runtime</span>
+                        <span class="modal-meta-value" id="modalRuntime"></span>
+                    </div>
+                    <div class="modal-meta-item">
+                        <span class="modal-meta-label">In-Universe</span>
+                        <span class="modal-meta-value" id="modalTimeline"></span>
+                    </div>
+                    <div class="modal-meta-item">
+                        <span class="modal-meta-label">Phase</span>
+                        <span class="modal-meta-value" id="modalPhase"></span>
+                    </div>
+                </div>
+                <p class="modal-desc" id="modalDescription"></p>
+                
+                <div class="modal-actions">
+                    <button class="modal-skip-btn" id="skipBtn" onclick="toggleSkippedFromModal()">
+                        <span>⊘</span>
+                        <span id="skipBtnText">Skip this entry</span>
+                    </button>
+                    <div class="watch-toggle" onclick="toggleWatchedFromModal()">
+                        <div class="watch-toggle-text">
+                            <strong id="toggleLabel">I have viewed this entry</strong>
+                        </div>
+                        <div class="toggle-track" id="toggleTrack"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 20px; font-size: 0.8rem; color: #777;">
+    <p>MCU Watch Order is an independent, non-commercial project created by fans for fans. Marvel Studios, Disney, and their respective logos, characters, and franchises remain the sole property of their rightful owners. This website functions strictly as an educational timeline guide and holds no official affiliation with Marvel or Disney. © 2026.</p>
+    </footer>
+
+    <!-- Scripts: data first, then logic -->
+    <script src="js/data.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
