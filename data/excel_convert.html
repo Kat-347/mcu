@@ -132,7 +132,7 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     
-                    // CRITICAL FIX: defval: "" ensures empty columns (like Phase) are still registered
+                    // ensures empty columns (like Phase) are still registered
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
 
                     if (jsonData.length === 0) {
@@ -156,7 +156,7 @@
                         throw new Error(`Missing columns: ${missingColumns.map(c => `"${c}"`).join(', ')}.\n\nYour file currently has these headers: ${foundCols}\n\n👉 Fix: Check your Excel file for typos, hidden spaces, or a missing "Phase" column.`);
                     }
 
-                    // Normalize the data to use clean, consistent keys and remove decimals
+                    // Normalise the data to use clean, consistent keys and remove decimals
                     const normalizedData = jsonData.map(row => {
                         const normalized = {};
                         requiredColumns.forEach(reqCol => {
